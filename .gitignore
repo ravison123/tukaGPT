@@ -1,0 +1,57 @@
+# -------------------------
+# Python
+# -------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+.Python
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# -------------------------
+# Data / Datasets
+# -------------------------
+data/processed/*
+data/splits/*
+!data/raw/               # keep original Tukaram Gatha text
+!data/README.md
+
+# -------------------------
+# Training artifacts
+# -------------------------
+checkpoints/
+experiments/
+logs/
+wandb/
+tensorboard/
+*.pt
+*.pth
+
+# -------------------------
+# OS / Misc
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# -------------------------
+# IDEs
+# -------------------------
+.idea/
+.vscode/
+*.swp
+
+# -------------------------
+# Other
+# -------------------------
+*.log
