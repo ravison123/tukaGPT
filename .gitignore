@@ -35,6 +35,7 @@ experiments/
 logs/
 wandb/
 tensorboard/
+artifacts/
 *.pt
 *.pth
 
