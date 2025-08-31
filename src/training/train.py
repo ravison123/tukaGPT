@@ -37,9 +37,7 @@ def train(model, train_dataloader, valid_dataloader, optimizer, scheduler, crite
         for epoch in range(1, epochs + 1):
             model.train()
             total_train_loss = 0
-            for i, (x, y) in enumerate(train_dataloader):
-                if i != len(train_dataloader) - 1:
-                    continue
+            for x, y in train_dataloader:
                 global_step = global_step + 1
                 x, y = x.to(device), y.to(device)
                 optimizer.zero_grad()
@@ -51,7 +49,8 @@ def train(model, train_dataloader, valid_dataloader, optimizer, scheduler, crite
                 if scheduler is not None:
                     scheduler.step()
                 total_train_loss += loss.item()
-                wandb.log({"train/loss": loss, "lr": scheduler.get_last_lr()[0]}, step=global_step)
+                wandb.log({"train/loss": loss, "lr": scheduler.get_last_lr()[0],
+                           "batch_size": x.shape[0]}, step=global_step)
                 pbar.set_postfix({"Training loss": f"{loss.item():.4f}"})
                 pbar.update(1)
 
@@ -65,7 +64,8 @@ def train(model, train_dataloader, valid_dataloader, optimizer, scheduler, crite
                     'optimizer_state_dict': optimizer.state_dict(),
                     'scheduler_state_dict': scheduler.state_dict(),
                 }, checkpoint_path)
-            except:
+            except Exception as e:
+                print(e)
                 print('Model logging failed')
 
             model.eval()
@@ -79,11 +79,11 @@ def train(model, train_dataloader, valid_dataloader, optimizer, scheduler, crite
                     loss = criterion(logits.view(-1, logits.size(-1)), y.view(-1))
                     total_val_loss += loss.item()
                     valid_step = ((epoch - 1) * valid_steps_per_epoch) + step_num
-                    wandb.log({"train/loss": loss}, step=valid_step)
+                    wandb.log({"valid/loss": loss}, step=valid_step)
 
             avg_val_loss = total_val_loss / len(valid_dataloader)
 
-            print(f"Epoch {epoch}: train_loss={avg_train_loss:.4f}, val_loss={avg_val_loss:.4f}")
+            print(f"Epoch {epoch}: train_loss={avg_train_loss:.4f}, valid_loss={avg_val_loss:.4f}")
 
 
 if __name__ == "__main__":
