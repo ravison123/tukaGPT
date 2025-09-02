@@ -54,34 +54,31 @@ def train(model, train_dataloader, valid_dataloader, optimizer, scheduler, crite
                 pbar.set_postfix({"Training loss": f"{loss.item():.4f}"})
                 pbar.update(1)
 
-            avg_train_loss = total_train_loss / len(train_dataloader)
+                if global_step % 10000 == 0:
+                    checkpoint_path = os.path.join(save_directory, f"checkpoint_step_{global_step}.pt")
+                    torch.save({
+                        'epoch': epoch,
+                        'global_step': global_step,
+                        'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                        'scheduler_state_dict': scheduler.state_dict(),
+                    }, checkpoint_path)
 
-            try:
-                checkpoint_path = os.path.join(save_directory, f"epoch_{epoch + 1}.pt")
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'scheduler_state_dict': scheduler.state_dict(),
-                }, checkpoint_path)
-            except Exception as e:
-                print(e)
-                print('Model logging failed')
+            avg_train_loss = total_train_loss / len(train_dataloader)
 
             model.eval()
             total_val_loss = 0
+            num_val_batches = len(valid_dataloader)
+
             with torch.no_grad():
-                step_num = 0
-                for x, y in valid_dataloader:
-                    step_num = step_num + 1
+                for batch_idx, (x, y) in enumerate(valid_dataloader):
                     x, y = x.to(device), y.to(device)
                     logits = model(x)
                     loss = criterion(logits.view(-1, logits.size(-1)), y.view(-1))
                     total_val_loss += loss.item()
-                    valid_step = ((epoch - 1) * valid_steps_per_epoch) + step_num
-                    wandb.log({"valid/loss": loss}, step=valid_step)
 
-            avg_val_loss = total_val_loss / len(valid_dataloader)
+            avg_val_loss = total_val_loss / num_val_batches
+            wandb.log({"valid/avg_loss": avg_val_loss}, step=global_step)
 
             print(f"Epoch {epoch}: train_loss={avg_train_loss:.4f}, valid_loss={avg_val_loss:.4f}")
 
@@ -93,7 +90,7 @@ if __name__ == "__main__":
     random.seed(seed)
 
 
-    vocab_size = 6000
+    vocab_size = 3278
     context_length = 512
     batch_size = 32
     d_model = 256
@@ -106,6 +103,11 @@ if __name__ == "__main__":
     train_tokens_file = ROOT / "data" / "tukaram_gatha_train_encoded.npy"
     valid_tokens_file = ROOT / "data" / "tukaram_gatha_valid_encoded.npy"
     train_tokens = np.load(train_tokens_file)
+
+    # sample_size = int(0.1 * len(train_tokens))
+    # indices = np.random.choice(len(train_tokens), size=sample_size, replace=False)
+    # train_tokens = train_tokens[indices]
+
     valid_tokens = np.load(valid_tokens_file)
 
     train_dataloader = get_dataloader(train_tokens, context_length, batch_size, shuffle = True)
@@ -128,7 +130,7 @@ if __name__ == "__main__":
 
     save_directory = ROOT / "checkpoints" / "7M_Model"
 
-    learning_rates = [3e-03]
+    learning_rates = [1e-03]
     total_steps = len(train_dataloader) * EPOCHS
     for learning_rate in learning_rates:
         optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)

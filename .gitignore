@@ -18,6 +18,7 @@ env/
 
 # Jupyter
 .ipynb_checkpoints/
+analysis.ipynb
 
 # -------------------------
 # Data / Datasets
